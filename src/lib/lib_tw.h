@@ -22,16 +22,28 @@ public:
   virtual void timeout() = 0;
 };
 
-class TimingWheel {
-private:
-  int _N;
-  int _n;
+class Timer {
+public:
+  Timer();
 
   iTrigger *_trigger;
   int _interval;
   int _left;
   int _at;
 
+  void create( iTrigger *trigger );
+  void arm( int at, int interval );
+  void cancel();
+
+  void pulse( int n, int N );
+};
+
+class TimingWheel {
+private:
+  int _N;
+  int _n;
+
+  Timer _timer;
 public:
   TimingWheel( int N, int n = 0 );
 
