@@ -64,6 +64,8 @@ set_target_properties( libgmock PROPERTIES
 include_directories( "${source_dir}/googletest/include" )
 include_directories( "${source_dir}/googlemock/include" )
 
+include_directories( "${PROJECT_SOURCE_DIR}/src/lib" )
+
 add_subdirectory( src )
 
 # Enable testing

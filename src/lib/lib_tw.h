@@ -16,4 +16,30 @@
 #ifndef LIB_TW_H
 #define LIB_TW_H
 
+class iTrigger {
+public:
+  virtual ~iTrigger();
+  virtual void timeout() = 0;
+};
+
+class TimingWheel {
+private:
+  int _N;
+  int _n;
+
+  iTrigger *_trigger;
+  int _interval;
+  int _left;
+  int _at;
+
+public:
+  TimingWheel( int N, int n = 0 );
+
+  void pulse();
+
+  int create( iTrigger *trigger );
+  void arm( int pulses );
+  void cancel();
+};
+
 #endif // #ifndef LIB_TW_H

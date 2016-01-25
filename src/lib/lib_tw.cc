@@ -14,3 +14,47 @@
  *   limitations under the License.
  */
 #include "lib_tw.h"
+
+iTrigger::~iTrigger()
+{}
+
+TimingWheel::TimingWheel( int N, int n )
+  : _N( N )
+  , _n( n )
+  , _trigger( 0 )
+  , _interval( 0 )
+  , _left( 0 )
+  , _at( -1 )
+{}
+
+void TimingWheel::pulse()
+{
+  _n = (_n + 1)%_N;
+
+  if (_n == _at) {
+    if (_left > _N) {
+      _left -= _N;
+    } else {
+      _trigger->timeout();
+      _at = -1;
+    }
+  }
+}
+
+int TimingWheel::create( iTrigger *trigger )
+{
+  _trigger = trigger;
+  return 0;
+}
+
+void TimingWheel::arm( int interval )
+{
+  _interval = interval;
+  _left = interval;
+  _at = (_n + interval)%_N;
+}
+
+void TimingWheel::cancel()
+{
+  _at = -1;
+}
