@@ -43,42 +43,61 @@ void Timer::cancel()
   _at = -1;
 }
 
-void Timer::pulse( int n, int N )
+void Timer::destroy()
 {
-  if (n == _at) {
-    if (_left > N) {
-      _left -= N;
-    } else {
-      _trigger->timeout();
-      _at = -1;
-    }
+  _at = -1;
+  _trigger = 0;
+}
+
+void Timer::pulse( int t, int T )
+{
+  if (t != _at) return;
+
+  if (_left > T) {
+    _left -= T;
+  } else {
+    _trigger->timeout();
+    _at = -1;
   }
 }
 
-TimingWheel::TimingWheel( int N, int n )
+TimingWheel::TimingWheel( int N, int T, int t_0 )
   : _N( N )
-  , _n( n )
+  , _T( T )
+  , _t( t_0 )
+  , _timer( N )
 {}
 
 void TimingWheel::pulse()
 {
-  _n = (_n + 1)%_N;
+  _t = (_t + 1)%_T;
 
-  _timer.pulse( _n, _N );
+  for (int timerid=0; timerid<_N; ++timerid)
+    if (_timer[timerid].busy())
+      _timer[timerid].pulse( _t, _T );
 }
 
 int TimingWheel::create( iTrigger *trigger )
 {
-  _timer.create( trigger );
-  return 0;
+  for (int timerid=0; timerid<_N; ++timerid)
+    if (not _timer[timerid].busy()) {
+      _timer[timerid].create( trigger );
+      return timerid;
+    }
+  return -1;
 }
 
-void TimingWheel::arm( int interval )
+void TimingWheel::arm( int timerid, int interval )
 {
-  _timer.arm( (_n + interval)%_N, interval );
+  _timer[timerid].arm( (_t + interval)%_T, interval );
 }
 
-void TimingWheel::cancel()
+void TimingWheel::cancel( int timerid )
 {
-  _timer.cancel();
+  _timer[timerid].cancel();
+}
+
+void TimingWheel::destroy( int timerid )
+{
+  _timer[timerid].destroy();
 }

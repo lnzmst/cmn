@@ -16,6 +16,8 @@
 #ifndef LIB_TW_H
 #define LIB_TW_H
 
+#include <vector>
+
 class iTrigger {
 public:
   virtual ~iTrigger();
@@ -34,24 +36,38 @@ public:
   void create( iTrigger *trigger );
   void arm( int at, int interval );
   void cancel();
+  void destroy();
 
-  void pulse( int n, int N );
+  inline void pulse( int n, int N );
+
+  inline bool busy();
 };
 
 class TimingWheel {
 private:
   int _N;
-  int _n;
+  int _T;
+  int _t;
 
-  Timer _timer;
+  std::vector<Timer> _timer;
+
 public:
-  TimingWheel( int N, int n = 0 );
+  /** Constructor to define geometry.
+   *
+   *  @param[in] N  Maximum number of supported Timer instances.
+   *  @param[in] T  Extension, in pulses, of the active time window.
+   *  @param[in] t_0 Initial time within the active time window.
+   */
+  TimingWheel( int N, int T, int t_0 );
 
   void pulse();
 
   int create( iTrigger *trigger );
-  void arm( int pulses );
-  void cancel();
+  void arm( int timerid, int interval );
+  void cancel( int timerid );
+  void destroy( int timerid );
 };
+
+#include "lib_tw.i"
 
 #endif // #ifndef LIB_TW_H

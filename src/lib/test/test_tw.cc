@@ -28,16 +28,20 @@ public:
 
 TEST_F( TimingWheelTest, an_armed_timer_should_timeout_at_programmed_time )
 {
+  static int const timers = 1;
   static int const N = 16;
 
   for (int n=0; n<N; ++n) {
-    TimingWheel tm( N, n );
+
+    TimingWheel tm( timers, N, n );
 
     for (int m=1; m<=N; ++m) {
       TriggerMock *trigger = new TriggerMock;
 
-      tm.create( trigger );
-      tm.arm( m );
+      int timerid = tm.create( trigger );
+      ASSERT_NE( timerid, -1 );
+
+      tm.arm( timerid, m );
 
 #if 0
       // Class MockFunction<F> has exactly one mock method.
@@ -79,6 +83,8 @@ TEST_F( TimingWheelTest, an_armed_timer_should_timeout_at_programmed_time )
       ASSERT_TRUE( ::testing::Mock::VerifyAndClearExpectations( trigger ) );
 #endif
 
+      tm.destroy( timerid );
+
       delete trigger;
     }
   }
@@ -86,27 +92,30 @@ TEST_F( TimingWheelTest, an_armed_timer_should_timeout_at_programmed_time )
 
 TEST_F( TimingWheelTest, an_armed_timer_can_be_cancelled )
 {
+  static int const timers = 1;
   static int const N = 16;
 
   for (int n=0; n<N; ++n) {
-    TimingWheel tm( N, n );
+    TimingWheel tm( timers, N, n );
 
     for (int m=3; m<N; ++m) {
       TriggerMock *trigger = new TriggerMock;
 
-      tm.create( trigger );
-      tm.arm( m );
+      int timerid = tm.create( trigger );
+      ASSERT_NE( timerid, -1 );
+      tm.arm( timerid, m );
 
       EXPECT_CALL( *trigger, timeout() ).Times(0);
 
       for (int t=0; t<m-1; ++t) {
-        if (t == 1) tm.cancel();
+        if (t == 1) tm.cancel( timerid );
         tm.pulse();
       }
 
       for (int t=0; t<3*N; ++t)
         tm.pulse();
 
+      tm.destroy( timerid );
       delete trigger;
     }
   }
@@ -114,19 +123,21 @@ TEST_F( TimingWheelTest, an_armed_timer_can_be_cancelled )
 
 TEST_F( TimingWheelTest, an_armed_long_timer_should_timeout_at_programmed_time )
 {
+  static int const timers = 1;
   static int const N = 16;
 
   for (int o=1; o<4; ++o) {
 
     for (int n=0; n<N; ++n) {
 
-      TimingWheel tm( N, n );
+      TimingWheel tm( timers, N, n );
 
       for (int m=1; m<=N; ++m) {
         TriggerMock *trigger = new TriggerMock;
 
-        tm.create( trigger );
-        tm.arm( o*N+m );
+        int timerid = tm.create( trigger );
+        ASSERT_NE( timerid, -1 );
+        tm.arm( timerid, o*N+m );
 
         EXPECT_CALL( *trigger, timeout() ).Times(0);
 
@@ -150,7 +161,9 @@ TEST_F( TimingWheelTest, an_armed_long_timer_should_timeout_at_programmed_time )
 
         ASSERT_TRUE( ::testing::Mock::VerifyAndClearExpectations( trigger ) );
 
-        tm.cancel();
+        tm.cancel( timerid );
+
+        tm.destroy( timerid );
 
         delete trigger;
       }
@@ -160,19 +173,21 @@ TEST_F( TimingWheelTest, an_armed_long_timer_should_timeout_at_programmed_time )
 
 TEST_F( TimingWheelTest, a_timer_can_be_rearmed )
 {
+  static int const timers = 1;
   static int const N = 16;
 
   for (int o=1; o<4; ++o) {
 
     for (int n=0; n<N; ++n) {
 
-      TimingWheel tm( N, n );
+      TimingWheel tm( timers, N, n );
 
       for (int m=1; m<=N; ++m) {
         TriggerMock *trigger = new TriggerMock;
 
-        tm.create( trigger );
-        tm.arm( o*N+m );
+        int timerid = tm.create( trigger );
+        ASSERT_NE( timerid, -1 );
+        tm.arm( timerid, o*N+m );
 
         EXPECT_CALL( *trigger, timeout() ).Times(0);
 
@@ -181,7 +196,7 @@ TEST_F( TimingWheelTest, a_timer_can_be_rearmed )
 
         ASSERT_TRUE( ::testing::Mock::VerifyAndClearExpectations( trigger ) );
 
-        tm.arm( 30 );
+        tm.arm( timerid, 30 );
 
         EXPECT_CALL( *trigger, timeout() ).Times(0);
 
@@ -205,10 +220,58 @@ TEST_F( TimingWheelTest, a_timer_can_be_rearmed )
 
         ASSERT_TRUE( ::testing::Mock::VerifyAndClearExpectations( trigger ) );
 
-        tm.cancel();
+        tm.cancel( timerid );
+
+        tm.destroy( timerid );
 
         delete trigger;
       }
     }
+  }
+}
+
+TEST_F( TimingWheelTest, works_with_multiple_timer_instances )
+{
+  static int const max_timers = 32;
+  static int const T = 64;
+  static int const t_0 = 0;
+  static int const run_timers = 2;
+  static int const timeout0 = 10;
+  static int const timeout1 = 30;
+
+  TimingWheel tm( max_timers, T, t_0 );
+
+  TriggerMock *trigger[run_timers];
+  int timerid[run_timers];
+  for (int k=0; k<run_timers; ++k) {
+    trigger[k] = new TriggerMock;
+    timerid[k] = tm.create( trigger[k] );
+    ASSERT_NE( timerid[k], -1 );
+  }
+  tm.arm( timerid[0], timeout0 );
+  tm.arm( timerid[1], timeout1 );
+
+  EXPECT_CALL( *trigger[0], timeout() ).Times(0);
+  EXPECT_CALL( *trigger[1], timeout() ).Times(0);
+
+  for (int t=0; t<timeout0-1; ++t)
+    tm.pulse();
+
+  for (int k=0; k<run_timers; ++k)
+    ASSERT_TRUE( ::testing::Mock::VerifyAndClearExpectations( trigger[k] ) );
+
+
+  EXPECT_CALL( *trigger[0], timeout() ).Times(1);
+  EXPECT_CALL( *trigger[1], timeout() ).Times(0);
+
+  tm.pulse();
+
+  for (int k=0; k<run_timers; ++k)
+    ASSERT_TRUE( ::testing::Mock::VerifyAndClearExpectations( trigger[k] ) );
+
+
+  for (int k=0; k<run_timers; ++k) {
+    tm.destroy( timerid[k] );
+    delete trigger[k];
   }
 }
