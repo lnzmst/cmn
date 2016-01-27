@@ -1,5 +1,9 @@
 /**
- *   Copyright 2016 Lorenzo Musto
+ *   @authors   Lorenzo Musto
+ *
+ *   @copyright Copyright 2016 Lorenzo Musto
+ *
+ *   @section   LICENSE
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -18,9 +22,15 @@
 
 #include <vector>
 
+/**
+ * Trigger interface to actuate the timeout operation.
+ */
 class iTrigger {
 public:
   virtual ~iTrigger();
+  /**
+   * The method triggered at timeout.
+   */
   virtual void timeout() = 0;
 };
 
