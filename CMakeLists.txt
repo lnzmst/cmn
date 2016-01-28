@@ -17,6 +17,8 @@ cmake_minimum_required( VERSION 3.0 )
 
 project( cmn )
 
+set(CMAKE_CXX_FLAGS "-Wall -Werror -g")
+
 # We need thread support
 find_package( Threads REQUIRED )
 

@@ -251,6 +251,7 @@ TEST_F( TimingWheelTest, works_with_multiple_timer_instances )
   tm.arm( timerid[0], timeout0 );
   tm.arm( timerid[1], timeout1 );
 
+  // just before trigger[0]
   EXPECT_CALL( *trigger[0], timeout() ).Times(0);
   EXPECT_CALL( *trigger[1], timeout() ).Times(0);
 
@@ -260,7 +261,7 @@ TEST_F( TimingWheelTest, works_with_multiple_timer_instances )
   for (int k=0; k<run_timers; ++k)
     ASSERT_TRUE( ::testing::Mock::VerifyAndClearExpectations( trigger[k] ) );
 
-
+  // should fire trigger[0]
   EXPECT_CALL( *trigger[0], timeout() ).Times(1);
   EXPECT_CALL( *trigger[1], timeout() ).Times(0);
 
@@ -269,6 +270,35 @@ TEST_F( TimingWheelTest, works_with_multiple_timer_instances )
   for (int k=0; k<run_timers; ++k)
     ASSERT_TRUE( ::testing::Mock::VerifyAndClearExpectations( trigger[k] ) );
 
+  //
+  EXPECT_CALL( *trigger[0], timeout() ).Times(0);
+  EXPECT_CALL( *trigger[1], timeout() ).Times(0);
+
+  for (int t=0; t<timeout1-timeout0-1; ++t)
+    tm.pulse();
+
+  for (int k=0; k<run_timers; ++k)
+    ASSERT_TRUE( ::testing::Mock::VerifyAndClearExpectations( trigger[k] ) );
+
+  // should fire trigger[1]
+  EXPECT_CALL( *trigger[0], timeout() ).Times(0);
+  EXPECT_CALL( *trigger[1], timeout() ).Times(1);
+
+  tm.pulse();
+
+  for (int k=0; k<run_timers; ++k)
+    ASSERT_TRUE( ::testing::Mock::VerifyAndClearExpectations( trigger[k] ) );
+
+
+  // no more fire
+  EXPECT_CALL( *trigger[0], timeout() ).Times(0);
+  EXPECT_CALL( *trigger[1], timeout() ).Times(0);
+
+  for (int t=0; t<T; ++t)
+    tm.pulse();
+
+  for (int k=0; k<run_timers; ++k)
+    ASSERT_TRUE( ::testing::Mock::VerifyAndClearExpectations( trigger[k] ) );
 
   for (int k=0; k<run_timers; ++k) {
     tm.destroy( timerid[k] );

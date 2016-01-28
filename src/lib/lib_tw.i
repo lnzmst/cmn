@@ -20,7 +20,7 @@
 #ifndef LIB_TW_I
 #define LIB_TW_I
 
-bool Timer::busy()
+bool Timer::exists()
 {
   return _trigger != 0;
 }

@@ -77,14 +77,14 @@ void TimingWheel::pulse()
   _t = (_t + 1)%_T;
 
   for (int timerid=0; timerid<_N; ++timerid)
-    if (_timer[timerid].busy())
+    if (_timer[timerid].exists())
       _timer[timerid].pulse( _t, _T );
 }
 
 int TimingWheel::create( iTrigger *trigger )
 {
   for (int timerid=0; timerid<_N; ++timerid)
-    if (not _timer[timerid].busy()) {
+    if (not _timer[timerid].exists()) {
       _timer[timerid].create( trigger );
       return timerid;
     }
